@@ -89,6 +89,10 @@ public class ConfigManager {
         setDefault("messages.en.help_update", " &8- &7/vac update &c- check for updates");
         setDefault("messages.en.help_version", " &8- &7/vac version &c- plugin version");
         setDefault("messages.en.help_replay", " &8- &7/vac replay <player> [save] &c- replay recorded data");
+        setDefault("messages.en.help_datacollect", " &8- &7/vac datacollect <start|stop> <player> [LEGIT|CHEAT] &c- collect dataset");
+        setDefault("messages.en.help_connection", " &8- &7/vac connection &c- show DB & ML status");
+        setDefault("messages.en.help_holograms", " &8- &7/vac holograms [on|off] &c- toggle cheat probability hologram");
+        setDefault("messages.en.help_cheatlist", " &8- &7/vac cheatlist &c- open cheat list GUI");
         setDefault("messages.en.help_settings", " &8- &7/vac settings &c- settings GUI");
         setDefault("messages.en.help_footer", "&8&m--------------------------------------------");
         setDefault("messages.en.profile_header", "&8&m----&8 [ &cVAC Profile &8] &m----");
@@ -185,6 +189,10 @@ public class ConfigManager {
         setDefault("messages.ru.help_update", " &8- &7/vac update &c- проверка обновлений");
         setDefault("messages.ru.help_version", " &8- &7/vac version &c- версия плагина");
         setDefault("messages.ru.help_replay", " &8- &7/vac replay <игрок> [save] &c- повтор данных");
+        setDefault("messages.ru.help_datacollect", " &8- &7/vac datacollect <start|stop> <игрок> [LEGIT|CHEAT] &c- сбор датасета");
+        setDefault("messages.ru.help_connection", " &8- &7/vac connection &c- статус БД и ML");
+        setDefault("messages.ru.help_holograms", " &8- &7/vac holograms [on|off] &c- голограмма вероятности");
+        setDefault("messages.ru.help_cheatlist", " &8- &7/vac cheatlist &c- список читеров");
         setDefault("messages.ru.help_settings", " &8- &7/vac settings &c- настройки");
         setDefault("messages.ru.help_footer", "&8&m---------------------");
         setDefault("messages.ru.profile_header", "&8&m----&8 [ &cVAC Профиль &8] &m----");

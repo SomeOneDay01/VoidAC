@@ -10,6 +10,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import vac.VAC;
 import vac.gui.SettingsGUI;
 import vac.killaura.KillAuraAnalyzer;
+import vac.ml.OnlineGaussianClassifier;
 import vac.models.PlayerData;
 
 import java.util.*;
@@ -19,7 +20,7 @@ public class VACCommand implements CommandExecutor, TabCompleter {
 
     private final VAC plugin;
 
-    private static final List<String> MAIN = Arrays.asList("ban","profile","lags","confidence","crash","alerts","spectate","report","check","checkvpn","history","freeze","settings","reload","stats","help","update","version","replay");
+    private static final List<String> MAIN = Arrays.asList("ban","profile","lags","confidence","crash","alerts","spectate","report","check","checkvpn","history","freeze","settings","reload","stats","help","update","version","replay","datacollect","connection","holograms","cheatlist");
     private static final List<String> CONF_ACTIONS = Arrays.asList("set","add","remove","reset","info");
     private static final List<String> LAG_VALS = Arrays.asList("5","15","30","60","120");
     private static final List<String> CONF_VALS = Arrays.asList("10","25","50","75","100");
@@ -51,6 +52,10 @@ public class VACCommand implements CommandExecutor, TabCompleter {
             case "update": return update(sender);
             case "version": return version(sender);
             case "replay": return replay(sender, args);
+            case "datacollect": return datacollect(sender, args);
+            case "connection": return connection(sender);
+            case "holograms": return holograms(sender, args);
+            case "cheatlist": return cheatlist(sender);
             default: sendHelp(sender); return true;
         }
     }
@@ -243,6 +248,75 @@ public class VACCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean datacollect(CommandSender s, String[] a) {
+        if (!s.hasPermission("vac.admin")) { s.sendMessage(noPerm()); return true; }
+        if (a.length < 3) { s.sendMessage(msg("usage").replace("{usage}", "/vac datacollect <start|stop> <игрок> [LEGIT|CHEAT]")); return true; }
+        Player t = Bukkit.getPlayer(a[2]);
+        if (t == null || !t.isOnline()) { s.sendMessage(msg("player_not_online")); return true; }
+        if (a[1].equalsIgnoreCase("start")) {
+            if (a.length < 4) { s.sendMessage("§cUsage: /vac datacollect start <игрок> LEGIT|CHEAT"); return true; }
+            String label = a[3].toUpperCase();
+            if (!label.equals("LEGIT") && !label.equals("CHEAT")) { s.sendMessage("§cLabel must be LEGIT or CHEAT"); return true; }
+            if (plugin.getDataCollector().startCollecting(t, label)) {
+                s.sendMessage("§aCollecting data for §c" + t.getName() + " §aas §c" + label);
+            } else {
+                s.sendMessage("§cAlready collecting data for this player.");
+            }
+        } else if (a[1].equalsIgnoreCase("stop")) {
+            if (plugin.getDataCollector().stopCollecting(t)) {
+                s.sendMessage("§aData collection stopped for §c" + t.getName());
+                s.sendMessage("§7Total model samples: §c" + plugin.getOnlineGaussianClassifier().getTotalSamples());
+            } else {
+                s.sendMessage("§cNo active collection for this player.");
+            }
+        }
+        return true;
+    }
+
+    private boolean connection(CommandSender s) {
+        if (!s.hasPermission("vac.admin")) { s.sendMessage(noPerm()); return true; }
+        s.sendMessage("§8&m---- §cVAC Connection §8&m----");
+        s.sendMessage("§7Database:");
+        s.sendMessage(" §8▶ §7MySQL: " + (plugin.getConfigManager().isMySQLEnabled()
+                ? "§aenabled" : "§7disabled"));
+        s.sendMessage(" §8▶ §7SQLite: " + (plugin.getConfigManager().isSQLiteEnabled()
+                ? "§aenabled" : "§7disabled"));
+        s.sendMessage("§7ML Model:");
+        OnlineGaussianClassifier ml = plugin.getOnlineGaussianClassifier();
+        s.sendMessage(" §8▶ §7Status: " + (ml.isReady() ? "§a✓ ready" : "§e⚡ training (" + ml.getTotalSamples() + " samples)"));
+        s.sendMessage(" §8▶ §7LEGIT samples: §c" + ml.getSampleCount("LEGIT"));
+        s.sendMessage(" §8▶ §7CHEAT samples: §c" + ml.getSampleCount("CHEAT"));
+        s.sendMessage("§7Data Collector: " + (plugin.getDataCollector().getActiveSessions() > 0
+                ? "§e" + plugin.getDataCollector().getActiveSessions() + " active"
+                : "§7idle"));
+        return true;
+    }
+
+    private boolean holograms(CommandSender s, String[] a) {
+        if (!(s instanceof Player)) { s.sendMessage(msg("only_players")); return true; }
+        if (!s.hasPermission("vac.admin")) { s.sendMessage(noPerm()); return true; }
+        Player p = (Player) s;
+        if (a.length >= 2 && a[1].equalsIgnoreCase("on")) {
+            plugin.getCheatHologramManager().setEnabled(p, true);
+            s.sendMessage("§aHolograms enabled.");
+        } else if (a.length >= 2 && a[1].equalsIgnoreCase("off")) {
+            plugin.getCheatHologramManager().setEnabled(p, false);
+            s.sendMessage("§cHolograms disabled.");
+        } else {
+            boolean current = plugin.getCheatHologramManager().isEnabled(p);
+            plugin.getCheatHologramManager().setEnabled(p, !current);
+            s.sendMessage(current ? "§cHolograms disabled." : "§aHolograms enabled.");
+        }
+        return true;
+    }
+
+    private boolean cheatlist(CommandSender s) {
+        if (!(s instanceof Player)) { s.sendMessage(msg("only_players")); return true; }
+        if (!s.hasPermission("vac.admin")) { s.sendMessage(noPerm()); return true; }
+        plugin.getCheatListGUI().open((Player) s);
+        return true;
+    }
+
     private boolean settings(CommandSender s, String[] a) {
         if(!(s instanceof Player)){s.sendMessage(msg("only_players"));return true;}
         if(!s.hasPermission("vac.admin")){s.sendMessage(noPerm());return true;}
@@ -308,6 +382,7 @@ public class VACCommand implements CommandExecutor, TabCompleter {
         s.sendMessage(msg("help_cps")); s.sendMessage(msg("help_reach")); s.sendMessage(msg("help_hits"));
         s.sendMessage(msg("help_settings")); s.sendMessage(msg("help_reload"));
         s.sendMessage(msg("help_update")); s.sendMessage(msg("help_version")); s.sendMessage(msg("help_replay"));
+        s.sendMessage(msg("help_datacollect")); s.sendMessage(msg("help_connection")); s.sendMessage(msg("help_holograms")); s.sendMessage(msg("help_cheatlist"));
         s.sendMessage(msg("help_footer"));
     }
 
@@ -336,7 +411,7 @@ public class VACCommand implements CommandExecutor, TabCompleter {
         return Collections.emptyList();
     }
 
-    private boolean isOnlineCmd(String sub){return sub.equals("ban")||sub.equals("profile")||sub.equals("lags")||sub.equals("confidence")||sub.equals("crash")||sub.equals("spectate")||sub.equals("report")||sub.equals("check")||sub.equals("checkvpn")||sub.equals("history")||sub.equals("freeze")||sub.equals("cps")||sub.equals("reach")||sub.equals("hits")||sub.equals("replay");}
+    private boolean isOnlineCmd(String sub){return sub.equals("ban")||sub.equals("profile")||sub.equals("lags")||sub.equals("confidence")||sub.equals("crash")||sub.equals("spectate")||sub.equals("report")||sub.equals("check")||sub.equals("checkvpn")||sub.equals("history")||sub.equals("freeze")||sub.equals("cps")||sub.equals("reach")||sub.equals("hits")||sub.equals("replay")||sub.equals("datacollect");}
     private List<String> getPlayers(){return Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());}
     private List<String> filter(List<String>l,String p){return l.stream().filter(s->s.toLowerCase().startsWith(p)).collect(Collectors.toList());}
     private String noPerm(){return plugin.getConfigManager().getMessage("no_permission");}

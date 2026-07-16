@@ -157,6 +157,12 @@ public class PlayerProfiler implements Listener {
     }
 
     public static class ProfileData {
+        public boolean baselinesComputed;
+        public double baseYawDelta;
+        public double yawDeltaStddev;
+        public double basePitchDelta;
+        public double pitchDeltaStddev;
+        public List<Long> getJumpTimes() { return jumpTimes; }
         final List<double[]> yawDeltas = new ArrayList<>();
         final List<double[]> pitchDeltas = new ArrayList<>();
         final List<double[]> velocities = new ArrayList<>();
@@ -170,11 +176,10 @@ public class PlayerProfiler implements Listener {
         double reachStddev;
         double baseAimDev;
         double aimDevStddev;
-        double baseYawDelta;
-        double yawDeltaStddev;
-        double basePitchDelta;
-        double pitchDeltaStddev;
-        boolean baselinesComputed;
+        public double getBaseYawDelta() { return baseYawDelta; }
+        public double getYawDeltaStddev() { return yawDeltaStddev; }
+        public double getBasePitchDelta() { return basePitchDelta; }
+        public double getPitchDeltaStddev() { return pitchDeltaStddev; }
         long baselineStartTime;
         long lastBaselineCompute;
 
@@ -211,7 +216,7 @@ public class PlayerProfiler implements Listener {
             return count > 0 ? sum / count : 0;
         }
 
-        double getRecentYawAverage() {
+        public double getRecentYawAverage() {
             if (yawDeltas.isEmpty()) return 0;
             int start = Math.max(0, yawDeltas.size() - 20);
             double sum = 0;
@@ -223,7 +228,7 @@ public class PlayerProfiler implements Listener {
             return count > 0 ? sum / count : 0;
         }
 
-        double getRecentPitchAverage() {
+        public double getRecentPitchAverage() {
             if (pitchDeltas.isEmpty()) return 0;
             int start = Math.max(0, pitchDeltas.size() - 20);
             double sum = 0;

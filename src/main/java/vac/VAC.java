@@ -24,6 +24,14 @@ import vac.updater.UpdateChecker;
 import vac.analysis.PlayerProfiler;
 import vac.analysis.AimAnalyzer;
 import vac.analysis.ReplayRecorder;
+import vac.ml.OnlineGaussianClassifier;
+import vac.ml.FeatureExtractor;
+import vac.ml.DataCollector;
+import vac.hologram.CheatHologramManager;
+import vac.gui.CheatListGUI;
+import vac.listeners.GUIListener;
+
+import java.io.File;
 
 public class VAC extends JavaPlugin {
 
@@ -54,6 +62,12 @@ public class VAC extends JavaPlugin {
     private PlayerProfiler playerProfiler;
     private AimAnalyzer aimAnalyzer;
     private ReplayRecorder replayRecorder;
+    private OnlineGaussianClassifier onlineGaussianClassifier;
+    private FeatureExtractor featureExtractor;
+    private DataCollector dataCollector;
+    private CheatHologramManager cheatHologramManager;
+    private CheatListGUI cheatListGUI;
+    private GUIListener guiListener;
 
     @Override
     public void onEnable() {
@@ -100,6 +114,12 @@ public class VAC extends JavaPlugin {
             playerProfiler = new PlayerProfiler(this);
             aimAnalyzer = new AimAnalyzer();
             replayRecorder = new ReplayRecorder(this);
+            onlineGaussianClassifier = new OnlineGaussianClassifier();
+            featureExtractor = new FeatureExtractor(this);
+            dataCollector = new DataCollector(this, featureExtractor);
+            cheatHologramManager = new CheatHologramManager(this, onlineGaussianClassifier, featureExtractor);
+            cheatListGUI = new CheatListGUI(this);
+            guiListener = new GUIListener(this, cheatListGUI);
             updateChecker = new UpdateChecker(this);
 
             if (configManager.isMySQLEnabled() || configManager.isSQLiteEnabled()) {
@@ -121,6 +141,7 @@ public class VAC extends JavaPlugin {
             getServer().getPluginManager().registerEvents(badPacketsManager, this);
             getServer().getPluginManager().registerEvents(antiXrayManager, this);
             getServer().getPluginManager().registerEvents(playerProfiler, this);
+            getServer().getPluginManager().registerEvents(guiListener, this);
             getServer().getPluginManager().registerEvents(updateChecker, this);
 
             if (configManager.isBungeeEnabled()) {
@@ -130,6 +151,15 @@ public class VAC extends JavaPlugin {
             if (configManager.isUpdaterEnabled()) {
                 updateChecker.checkAsync();
             }
+
+            File modelFile = new File(getDataFolder(), "model.json");
+            if (modelFile.exists()) {
+                onlineGaussianClassifier.load(modelFile);
+                getLogger().info("ML model loaded: " + onlineGaussianClassifier.getTotalSamples() + " samples");
+            }
+
+            dataCollector.start();
+            cheatHologramManager.start();
 
             if (configManager.isDiscordBotEnabled()) {
                 discordBot.start();
@@ -155,6 +185,11 @@ public class VAC extends JavaPlugin {
         if (bungeeManager != null) bungeeManager.disable();
         if (lagManager != null) lagManager.stopAll();
         if (freezeManager != null) freezeManager.unfreezeAll();
+        if (cheatHologramManager != null) cheatHologramManager.shutdown();
+        if (dataCollector != null) dataCollector.shutdown();
+        if (onlineGaussianClassifier != null) {
+            onlineGaussianClassifier.save(new File(getDataFolder(), "model.json"));
+        }
         if (crashManager != null) crashManager.shutdown();
         if (replayRecorder != null) replayRecorder.shutdown();
         if (playerProfiler != null) playerProfiler.cleanup();
@@ -195,4 +230,9 @@ public class VAC extends JavaPlugin {
     public AimAnalyzer getAimAnalyzer() { return aimAnalyzer; }
     public ReplayRecorder getReplayRecorder() { return replayRecorder; }
     public UpdateChecker getUpdateChecker() { return updateChecker; }
+    public OnlineGaussianClassifier getOnlineGaussianClassifier() { return onlineGaussianClassifier; }
+    public FeatureExtractor getFeatureExtractor() { return featureExtractor; }
+    public DataCollector getDataCollector() { return dataCollector; }
+    public CheatHologramManager getCheatHologramManager() { return cheatHologramManager; }
+    public CheatListGUI getCheatListGUI() { return cheatListGUI; }
 }

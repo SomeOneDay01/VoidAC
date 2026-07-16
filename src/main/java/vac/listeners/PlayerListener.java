@@ -59,6 +59,12 @@ public class PlayerListener implements Listener {
         if (plugin.getPlayerProfiler() != null) {
             plugin.getPlayerProfiler().remove(player.getUniqueId());
         }
+        if (plugin.getCheatHologramManager() != null) {
+            plugin.getCheatHologramManager().removeHologram(player.getUniqueId());
+        }
+        if (plugin.getDataCollector() != null) {
+            plugin.getDataCollector().stopCollecting(player);
+        }
 
         plugin.getPlayerDataManager().remove(player.getUniqueId());
     }

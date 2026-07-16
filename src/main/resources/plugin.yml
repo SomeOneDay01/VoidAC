@@ -37,6 +37,7 @@ permissions:
       vac.command.update: true
       vac.command.version: true
       vac.command.replay: true
+      vac.command.datacollect: true
       vac.alerts: true
       vac.report: true
   vac.command.ban:
@@ -86,6 +87,9 @@ permissions:
     default: op
   vac.command.replay:
     description: Доступ к /vac replay
+    default: op
+  vac.command.datacollect:
+    description: Доступ к /vac datacollect
     default: op
   vac.alerts:
     description: Получение алертов VAC и управление ими
