@@ -1,0 +1,323 @@
+# ============================================
+# VAC Anti-Cheat Configuration
+# ============================================
+
+# MySQL Database Configuration
+mysql:
+  enabled: false
+  host: localhost
+  port: 3306
+  database: vac_anticheat
+  username: root
+  password: ""
+  useSSL: false
+  poolSize: 10
+  table_prefix: vac_
+
+# Confidence System
+confidence:
+  # На сколько увеличивается уверенность при одном нарушении
+  increment_per_violation: 2.0
+  # Максимальная уверенность (в процентах)
+  max_confidence: 100.0
+  # При какой уверенности банить
+  ban_threshold: 100.0
+  # На сколько уменьшается уверенность в секунду (если нет нарушений)
+  decay_per_second: 0.5
+  # Через сколько секунд после последнего нарушения начинается уменьшение
+  decay_delay_seconds: 30
+  # Как часто проверять уверенность (в секундах)
+  check_interval_seconds: 3
+  # Сколько нарушений одного типа нужно для подозрения (мультипликатор уверенности)
+  violation_multiplier: 1.5
+  # Автоматически ли банить при достижении ban_threshold
+  auto_ban: true
+  # Минимальная уверенность для команды /vac ban
+  min_confidence_for_manual_ban: 0.0
+
+# Animation Settings
+animation:
+  # Включить анимацию при бане
+  enabled: true
+  # Длительность анимации (в тиках, 20 тиков = 1 секунда)
+  duration_ticks: 60
+  # Количество витков спирали
+  spiral_loops: 3
+  # Количество частиц на виток
+  particles_per_loop: 30
+  # Высота подъема
+  lift_height: 5.0
+  # Частица для спирали (https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html)
+  spiral_particle: FLAME
+  # Частица для следа
+  trail_particle: REDSTONE
+  # Частица для взрыва
+  explosion_particle: EXPLOSION_LARGE
+  # Частицы осколков
+  shrapnel_particle: FIREWORKS_SPARK
+  # Дропать ли ресурсы игрока при бане
+  drop_items: true
+  # Забирать ли опыт
+  drop_xp: true
+  # Забирать ли броню
+  drop_armor: true
+  # Громкость звука взрыва
+  explosion_volume: 2.0
+  explosion_pitch: 0.8
+  # Звук при подъеме
+  lift_sound: ENTITY_BLAZE_AMBIENT
+  lift_volume: 0.5
+  lift_pitch: 1.0
+  # Звук бана
+  ban_sound: ENTITY_WITHER_DEATH
+  ban_volume: 1.0
+  ban_pitch: 0.5
+  # Звук взрыва
+  explosion_sound: ENTITY_GENERIC_EXPLODE
+
+# Lag System (FakeLags)
+lags:
+  # Время лага по умолчанию (в секундах)
+  default_duration: 15
+  # Максимальное время лага (в секундах)
+  max_duration: 120
+  # Категории лагов
+  categories:
+    connection:
+      enabled: true
+      description: "Симуляция проблем с соединением"
+      duration_multiplier: 1.0
+      packet_delay_ticks: 40
+      cancel_movement: true
+    block:
+      enabled: true
+      description: "Симуляция лагов с блоками"
+      duration_multiplier: 1.0
+      packet_delay_ticks: 60
+      cancel_movement: true
+    entity:
+      enabled: true
+      description: "Симуляция лагов с сущностями"
+      duration_multiplier: 1.0
+      packet_delay_ticks: 30
+      cancel_movement: false
+    all:
+      enabled: true
+      description: "Симуляция всех типов лагов"
+      duration_multiplier: 1.5
+      packet_delay_ticks: 80
+      cancel_movement: true
+
+# Punishment Settings
+punishment:
+  # Оповещать всех в чате
+  broadcast: true
+  # Команды, выполняемые от имени консоли при бане (поддержка плейсхолдеров: {player}, {uuid})
+  console_commands:
+    - "ban {player} [VAC] Cheating detected! Уверенность: {confidence}%"
+    - "say &c[VAC] &7Игрок &c{player} &7был забанен за использование читов (уверенность: {confidence}%)"
+  # Команды, выполняемые от имени оператора
+  commands: []
+  # Команды, выполняемые при подозрении (уверенность > 50%)
+  suspicion_commands:
+    - "say &e[VAC] &7Игрок &c{player} &7под подозрением (уверенность: {confidence}%)"
+  # Команды, выполняемые при уверенности 100%
+  ban_commands_override: false
+  ban_commands:
+    - "ban-ip {player} [VAC] Cheating detected!"
+  # Сообщение при кике/бане
+  kick_message: |
+    &c&lVAC Anti-Cheat
+    &7Вы были забанены анти-читом VAC.
+    &7Причина: Использование запрещённых модификаций
+    &7Уверенность: {confidence}%
+    
+    &7Если вы считаете, что это ошибка,
+    &7обратитесь к администрации сервера.
+
+# Messages
+messages:
+  prefix: "&8[&cVAC&8] &7"
+  no_permission: "&cУ вас нет прав на использование этой команды."
+  player_not_found: "&cИгрок не найден."
+  player_not_online: "&cИгрок не онлайн."
+  only_players: "&cЭту команду могут использовать только игроки."
+  reload_success: "&aКонфигурация перезагружена."
+  reload_fail: "&cОшибка при перезагрузке конфигурации."
+  banned: "&c{player} &7был забанен анти-читом &cVAC&7!"
+  banned_animation: "&c{player} &7был забанен с анимацией анти-читом &cVAC&7!"
+  ban_failed: "&cНе удалось забанить игрока &c{player}&7."
+  confidence_set: "&7Уверенность игрока &c{player} &7установлена на &c{confidence}%&7."
+  confidence_add: "&7Уверенность игрока &c{player} &7увеличена на &c{amount}%&7. Текущая: &c{confidence}%"
+  confidence_remove: "&7Уверенность игрока &c{player} &7уменьшена на &c{amount}%&7. Текущая: &c{confidence}%"
+  confidence_info: "&7Уверенность игрока &c{player}&7: &c{confidence}%"
+  confidence_reset: "&7Уверенность игрока &c{player} &7сброшена."
+  profile_header: "&8&m━━━━━━━━━━━━━━━━━━&8 [ &cVAC Profile &8] &m━━━━━━━━━━━━━━━━━━"
+  profile_footer: "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  profile_confidence: " &8▶ &7Уверенность: &c{confidence}%"
+  profile_health: " &8▶ &7Здоровье: &c{health}&7/&c{max_health}"
+  profile_food: " &8▶ &7Сытость: &c{food}"
+  profile_ping: " &8▶ &7Пинг: &c{ping}ms"
+  profile_location: " &8▶ &7Локация: &c{world} &7({x}, {y}, {z})"
+  profile_checks: " &8▶ &7Проверки (&c{total_violations}&7):"
+  profile_check_line: "   &8- &c{check}&7: &c{violations} &7нарушений (уверенность: &c{check_confidence}%&7)"
+  profile_no_checks: "   &8- &7Нет нарушений"
+  profile_grim_version: " &8▶ &7GrimAC &8| &7Версия: &c{version}"
+  lags_started: "&7Лаги для игрока &c{player} &7запущены. Категория: &c{category}"
+  lags_stopped: "&7Лаги для игрока &c{player} &7остановлены."
+  lags_already: "&cУ игрока &c{player} &cуже есть активные лаги."
+  lags_not_active: "&cУ игрока &c{player} &cнет активных лагов."
+  lags_invalid_category: "&cНеверная категория лагов. Доступные: {categories}"
+  lags_category_usage: "&7Использование: &c/vac lags <игрок> [категория]"
+  lags_help: " &8- &7/vac lags <игрок> stop &c- остановить лаги"
+  lags_help_line: " &8- &7/vac lags <игрок> <категория> [время] &c- запустить лаги"
+  help_header: "&8&m━━━━━━━━━━━━━━━━━━&8 [ &cVAC Help &8] &m━━━━━━━━━━━━━━━━━━"
+  help_ban: " &8- &7/vac ban <игрок> &c- забанить с анимацией"
+  help_profile: " &8- &7/vac profile <игрок> &c- профиль игрока"
+  help_lags: " &8- &7/vac lags <игрок> [категория|stop] [время] &c- управление лагами"
+  help_confidence: " &8- &7/vac confidence <игрок> <set|add|remove|reset|info> [значение] &c- управление уверенностью"
+  help_reload: " &8- &7/vac reload &c- перезагрузить конфигурацию"
+  help_crash: " &8- &7/vac crash <игрок> [метод] &c- крашнуть клиент"
+  help_alerts: " &8- &7/vac alerts [on|off] &c- алерты"
+  help_spectate: " &8- &7/vac spectate <игрок|stop> &c- слежка"
+  help_report: " &8- &7/vac report <игрок> <причина> &c- репорт"
+  help_check: " &8- &7/vac check <игрок> &c- проверка"
+  help_checkvpn: " &8- &7/vac checkvpn <игрок> &c- проверка VPN"
+  help_history: " &8- &7/vac history <игрок> &c- история"
+  help_freeze: " &8- &7/vac freeze <игрок> [off] &c- заморозка"
+  help_cps: " &8- &7/vac cps <игрок> &c- CPS игрока"
+  help_reach: " &8- &7/vac reach <игрок> &c- дистанция атак"
+  help_hits: " &8- &7/vac hits <игрок> &c- детальная статистика атак"
+  help_settings: " &8- &7/vac settings &c- GUI настройки"
+  help_footer: "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  ka_header: "&8&m━━━━━━━━━&8 [ &cKillAura &7{player} &8] &m━━━━━━━━━"
+  ka_cps: " &8▶ &7CPS: &c{cps} &7(swings: {swings})"
+  ka_reach: " &8▶ &7Reach: &c{reach} &7(hits: {hits})"
+  ka_aim: " &8▶ &7Aim Deviation: &c{aim}"
+  ka_wall: " &8▶ &7Wall hits: &c{walls}&7/{hits}"
+  crash_started: "&7Клиент игрока &c{player} &7крашится. Метод: &c{method}"
+  crash_failed: "&cНе удалось скрашить клиент игрока &c{player}&7."
+  crash_methods: "&7Доступные методы: &c{methods}"
+  usage: "&cИспользование: &7{usage}"
+  unknown_command: "&cНеизвестная подкоманда. Используйте &7/vac help"
+  stats_header: "&c&lVAC Statistics"
+  stats_players_tracked: " &8▶ &7Отслеживается игроков: &c{count}"
+  stats_checks_total: " &8▶ &7Всего проверок: &c{count}"
+  stats_banned: " &8▶ &7Забанено: &c{count}"
+  stats_reports: " &8▶ &7Репортов: &c{count}"
+
+  # Spectate
+  spectate_started: "&7Вы начали слежку за &c{player}&7. Уверенность в ActionBar."
+  spectate_stopped: "&7Слежка остановлена."
+  spectate_actionbar: "&c{player} &7| &c{confidence}% &7уверенность"
+
+  # Report
+  report_sent: "&aРепорт на &c{player} &aотправлен. Причина: &f{reason}"
+  report_alert: "&8[&cVAC&8] &e{reporter} &7отправил репорт на &c{player}&7: &f{reason}"
+
+  # Check
+  check_started: "&8[&cVAC&8] &7Проверка игрока &c{player}&7..."
+  check_complete: "&8[&cVAC&8] &7Проверка &c{player} &7завершена. Уверенность: &c{confidence}%"
+
+  # Freeze
+  freeze_on: "&cВы заморожены! Ожидайте администратора."
+  freeze_off: "&aЗаморозка снята."
+
+  # VPN
+  vpn_checking: "&7Проверка VPN для &c{player} &7(IP: {ip})..."
+  vpn_result: "&7VPN для &c{player} &7(IP: {ip}): &f{result}"
+
+  # History
+  history_header: "&8&m━━━━━━━━━━&8 [ &cИстория {player} &8] &m━━━━━━━━━━"
+  history_line: " &8- &c{check} &7x{violations} &7| &c{confidence}% &7| &f{time}"
+  history_footer: "&8&m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  history_empty: "&7История нарушений пуста."
+
+  # Webhook
+  webhook_ban: "**[VAC] Бан**\nИгрок: {player}\nUUID: {uuid}\nУверенность: {confidence}%\nЗабанил: {banned_by}"
+  webhook_alert: "**[VAC] Алерт**\nИгрок: {player}\nПроверка: {check}\nУверенность: {confidence}%"
+
+  # Alert messages
+  alerts_enabled: "&aАлерты VAC включены"
+  alerts_disabled: "&cАлерты VAC выключены"
+  alert_message: "&8[&cVAC&8] &c{player} &7возможно использует читы! (&c{check}&7, уверенность: &c{confidence}%&7)"
+
+# Report Settings
+report:
+  confidence_increment: 5.0
+
+# Discord/Telegram Webhook
+webhook:
+  enabled: false
+  discord_url: ""
+  alert_webhook: false
+  ban_webhook: true
+
+# Discord Bot (JDA)
+discord:
+  enabled: false
+  token: ""
+  channel_id: ""
+  guild_id: ""
+  allowed_role: ""
+
+# Web Dashboard
+dashboard:
+  port: 8080
+  password: "changeme"
+
+# KillAura Detection
+killaura:
+  # Порог общей оценки (0-100) для повышения уверенности
+  threshold: 60.0
+  # На сколько увеличивать уверенность при обнаружении
+  confidence_increment: 3.0
+  # Максимальный легитимный CPS (выше = подозрение)
+  max_cps: 8.0
+  # Максимальная легитимная дистанция (выше = подозрение)
+  max_reach: 3.5
+  # Минимальное легитимное отклонение прицела (ниже = подозрение, идеальный прицел)
+  min_aim_deviation: 0.8
+  # Максимальный процент атак через стены
+  max_wall_ratio: 5.0
+
+# Alert Settings
+alerts:
+  enabled: true
+  thresholds:
+    - 30
+    - 50
+    - 70
+    - 90
+
+# SQLite (автоматически включен если mysql.enabled: false)
+sqlite:
+  enabled: true
+
+# Bungee/Velocity синхронизация
+bungee:
+  enabled: false
+
+# Anti-Xray детекция
+antixray:
+  enabled: true
+
+# Auto-Updater
+updater:
+  enabled: true
+  notify_on_join: true
+
+# Advanced Settings
+advanced:
+  # Интервал обновления данных в тиках
+  update_interval_ticks: 20
+  # Асинхронная загрузка данных
+  async_loading: true
+  # Debug режим
+  debug: false
+  # Логировать все действия в файл
+  log_to_file: true
+  # Максимальное количество данных в кэше
+  cache_size: 1000
+  # Время жизни кэша в минутах
+  cache_lifetime_minutes: 30

@@ -1,0 +1,83 @@
+name: VAC
+version: 1.0.0
+main: vac.VAC
+api-version: 1.16
+author: SomeOneDay
+description: Video Assistant Anti-Cheat with GrimAC integration
+
+softdepend:
+  - GrimAC
+  - PacketEvents
+
+commands:
+  vac:
+    description: Главная команда VAC Anti-Cheat
+    usage: /vac help
+    aliases: [vacop]
+    permission: vac.admin
+
+permissions:
+  vac.admin:
+    description: Полный доступ ко всем командам VAC
+    default: op
+    children:
+      vac.command.ban: true
+      vac.command.profile: true
+      vac.command.lags: true
+      vac.command.confidence: true
+      vac.command.crash: true
+      vac.command.reload: true
+      vac.command.spectate: true
+      vac.command.check: true
+      vac.command.history: true
+      vac.command.freeze: true
+      vac.command.cps: true
+      vac.command.reach: true
+      vac.command.hits: true
+      vac.alerts: true
+      vac.report: true
+  vac.command.ban:
+    description: Доступ к /vac ban
+    default: op
+  vac.command.profile:
+    description: Доступ к /vac profile
+    default: op
+  vac.command.lags:
+    description: Доступ к /vac lags
+    default: op
+  vac.command.confidence:
+    description: Доступ к /vac confidence
+    default: op
+  vac.command.crash:
+    description: Доступ к /vac crash
+    default: op
+  vac.command.reload:
+    description: Доступ к /vac reload
+    default: op
+  vac.command.spectate:
+    description: Доступ к /vac spectate
+    default: op
+  vac.command.check:
+    description: Доступ к /vac check
+    default: op
+  vac.command.history:
+    description: Доступ к /vac history
+    default: op
+  vac.command.freeze:
+    description: Доступ к /vac freeze
+    default: op
+  vac.command.cps:
+    description: Доступ к /vac cps
+    default: op
+  vac.command.reach:
+    description: Доступ к /vac reach
+    default: op
+  vac.command.hits:
+    description: Доступ к /vac hits
+    default: op
+  vac.alerts:
+    description: Получение алертов VAC и управление ими
+    default: op
+  vac.report:
+    description: Возможность отправлять репорты через /vac report
+    default: op
