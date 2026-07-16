@@ -3,7 +3,6 @@ package vac.ml;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import vac.VAC;
-import vac.killaura.KillAuraAnalyzer;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -16,16 +15,9 @@ public class DataCollector {
     private final FeatureExtractor extractor;
     private final Map<UUID, CollectionSession> activeSessions = new ConcurrentHashMap<>();
     private final List<FeatureVector> pendingSamples = new ArrayList<>();
-    private final Map<UUID, Long> lastAutoCollect = new HashMap<>();
     private BukkitRunnable collectTask;
-    private BukkitRunnable autoCollectTask;
 
     private static final int COLLECT_INTERVAL_TICKS = 20;
-    private static final int AUTO_COLLECT_INTERVAL_TICKS = 40;
-    private static final long AUTO_COOLDOWN_MS = 5000;
-    private static final long CLEAN_PLAYER_MIN_MS = 300_000;
-    private static final int MIN_HITS_FOR_CHEAT = 15;
-    private static final int MIN_HITS_FOR_LEGIT = 20;
 
     public DataCollector(VAC plugin, FeatureExtractor extractor) {
         this.plugin = plugin;
@@ -52,61 +44,7 @@ public class DataCollector {
         };
         collectTask.runTaskTimer(plugin, 60L, COLLECT_INTERVAL_TICKS);
 
-        autoCollectTask = new BukkitRunnable() {
-            @Override
-            public void run() {
-                autoCollect();
-            }
-        };
-        autoCollectTask.runTaskTimer(plugin, 100L, AUTO_COLLECT_INTERVAL_TICKS);
-
         saveTask();
-    }
-
-    private void autoCollect() {
-        long now = System.currentTimeMillis();
-        KillAuraAnalyzer ka = plugin.getKillAuraAnalyzer();
-
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            UUID uuid = player.getUniqueId();
-
-            KillAuraAnalyzer.HitStats stats = ka.getStats(player);
-            if (stats.totalHits < 5) continue;
-
-            String label = null;
-
-            boolean highCps = stats.cps > plugin.getConfigManager().getKaMaxCps();
-            boolean highReach = stats.avgReach > plugin.getConfigManager().getKaMaxReach();
-            boolean lowAim = stats.totalHits >= 10 && stats.avgAimDev < 0.3;
-
-            if (stats.totalHits >= MIN_HITS_FOR_CHEAT && (highCps || highReach || lowAim)) {
-                label = "CHEAT";
-            }
-
-            long onlineSince = now - (player.getTicksLived() * 50L);
-            if (stats.totalHits >= MIN_HITS_FOR_LEGIT && onlineSince > CLEAN_PLAYER_MIN_MS) {
-                if (!highCps && !highReach && stats.avgAimDev > 0.5) {
-                    double pdConfidence = plugin.getPlayerDataManager().getOrCreate(player).getConfidence();
-                    if (pdConfidence < 10) {
-                        label = "LEGIT";
-                    }
-                }
-            }
-
-            if (label != null) {
-                Long lastCollect = lastAutoCollect.get(uuid);
-                if (lastCollect == null || now - lastCollect > AUTO_COOLDOWN_MS) {
-                    lastAutoCollect.put(uuid, now);
-                    FeatureVector fv = extractor.extract(player, label);
-                    synchronized (pendingSamples) {
-                        pendingSamples.add(fv);
-                    }
-                    if (plugin.getConfigManager().isDebug()) {
-                        plugin.getLogger().info("[AutoCollect] " + player.getName() + " → " + label);
-                    }
-                }
-            }
-        }
     }
 
     private void saveTask() {
@@ -120,9 +58,6 @@ public class DataCollector {
                     pendingSamples.clear();
                 }
                 saveBatch(toSave);
-                if (plugin.getConfigManager().isDebug()) {
-                    plugin.getLogger().info("[AutoCollect] Saved " + toSave.size() + " samples");
-                }
             }
         }.runTaskTimerAsynchronously(plugin, 200L, 200L);
     }
@@ -247,7 +182,6 @@ public class DataCollector {
 
     public void shutdown() {
         if (collectTask != null) collectTask.cancel();
-        if (autoCollectTask != null) autoCollectTask.cancel();
         synchronized (pendingSamples) {
             if (!pendingSamples.isEmpty()) {
                 saveBatch(new ArrayList<>(pendingSamples));
@@ -255,7 +189,6 @@ public class DataCollector {
             }
         }
         activeSessions.clear();
-        lastAutoCollect.clear();
     }
 
     private static class CollectionSession {
