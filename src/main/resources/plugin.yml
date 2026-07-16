@@ -1,5 +1,5 @@
 name: VAC
-version: 1.0.2
+version: 1.0.3
 main: vac.VAC
 api-version: 1.16
 author: SomeOneDay
@@ -34,6 +34,9 @@ permissions:
       vac.command.cps: true
       vac.command.reach: true
       vac.command.hits: true
+      vac.command.update: true
+      vac.command.version: true
+      vac.command.replay: true
       vac.alerts: true
       vac.report: true
   vac.command.ban:
@@ -74,6 +77,15 @@ permissions:
     default: op
   vac.command.hits:
     description: Доступ к /vac hits
+    default: op
+  vac.command.update:
+    description: Доступ к /vac update
+    default: op
+  vac.command.version:
+    description: Доступ к /vac version
+    default: op
+  vac.command.replay:
+    description: Доступ к /vac replay
     default: op
   vac.alerts:
     description: Получение алертов VAC и управление ими

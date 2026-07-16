@@ -86,6 +86,9 @@ public class ConfigManager {
         setDefault("messages.en.help_cps", " &8- &7/vac cps <player> &c- CPS stats");
         setDefault("messages.en.help_reach", " &8- &7/vac reach <player> &c- reach stats");
         setDefault("messages.en.help_hits", " &8- &7/vac hits <player> &c- detailed hit stats");
+        setDefault("messages.en.help_update", " &8- &7/vac update &c- check for updates");
+        setDefault("messages.en.help_version", " &8- &7/vac version &c- plugin version");
+        setDefault("messages.en.help_replay", " &8- &7/vac replay <player> [save] &c- replay recorded data");
         setDefault("messages.en.help_settings", " &8- &7/vac settings &c- settings GUI");
         setDefault("messages.en.help_footer", "&8&m--------------------------------------------");
         setDefault("messages.en.profile_header", "&8&m----&8 [ &cVAC Profile &8] &m----");
@@ -129,6 +132,14 @@ public class ConfigManager {
         setDefault("messages.en.ka_reach", " &8▶ &7Reach: &c{reach} &7(hits: {hits})");
         setDefault("messages.en.ka_aim", " &8▶ &7Aim Deviation: &c{aim}");
         setDefault("messages.en.ka_wall", " &8▶ &7Wall hits: &c{walls}&7/{hits}");
+        setDefault("messages.en.update_checking", "&7Checking for updates...");
+        setDefault("messages.en.update_checked", "&aUpdate check complete. Use &7/vac version &ato see current version.");
+        setDefault("messages.en.update_error", "&cUpdate checker not available.");
+        setDefault("messages.en.version_info", "&7VAC Anti-Cheat &c{version}");
+        setDefault("messages.en.replay_started", "&7Replaying data...");
+        setDefault("messages.en.replay_stopped", "&7Replay stopped.");
+        setDefault("messages.en.replay_saved", "&7Replay saved for &c{player}&7.");
+        setDefault("messages.en.replay_none", "&cNo replay data available for this player.");
         setDefault("messages.en.webhook_ban", "**[VAC] Ban**\nPlayer: {player}\nUUID: {uuid}\nConfidence: {confidence}%\nBanned by: {banned_by}");
         setDefault("messages.en.webhook_alert", "**[VAC] Alert**\nPlayer: {player}\nCheck: {check}\nConfidence: {confidence}%");
 
@@ -171,6 +182,9 @@ public class ConfigManager {
         setDefault("messages.ru.help_cps", " &8- &7/vac cps <игрок> &c- CPS");
         setDefault("messages.ru.help_reach", " &8- &7/vac reach <игрок> &c- дистанция");
         setDefault("messages.ru.help_hits", " &8- &7/vac hits <игрок> &c- статистика атак");
+        setDefault("messages.ru.help_update", " &8- &7/vac update &c- проверка обновлений");
+        setDefault("messages.ru.help_version", " &8- &7/vac version &c- версия плагина");
+        setDefault("messages.ru.help_replay", " &8- &7/vac replay <игрок> [save] &c- повтор данных");
         setDefault("messages.ru.help_settings", " &8- &7/vac settings &c- настройки");
         setDefault("messages.ru.help_footer", "&8&m---------------------");
         setDefault("messages.ru.profile_header", "&8&m----&8 [ &cVAC Профиль &8] &m----");
@@ -214,6 +228,14 @@ public class ConfigManager {
         setDefault("messages.ru.ka_reach", " &8▶ &7Reach: &c{reach} &7(hits: {hits})");
         setDefault("messages.ru.ka_aim", " &8▶ &7Aim Deviation: &c{aim}");
         setDefault("messages.ru.ka_wall", " &8▶ &7Wall hits: &c{walls}&7/{hits}");
+        setDefault("messages.ru.update_checking", "&7Проверка обновлений...");
+        setDefault("messages.ru.update_checked", "&aПроверка завершена. Используйте &7/vac version &aдля версии.");
+        setDefault("messages.ru.update_error", "&cМодуль обновлений недоступен.");
+        setDefault("messages.ru.version_info", "&7VAC Anti-Cheat &c{version}");
+        setDefault("messages.ru.replay_started", "&7Воспроизведение данных...");
+        setDefault("messages.ru.replay_stopped", "&7Воспроизведение остановлено.");
+        setDefault("messages.ru.replay_saved", "&7Запись сохранена для &c{player}&7.");
+        setDefault("messages.ru.replay_none", "&cНет данных для воспроизведения.");
         setDefault("messages.ru.webhook_ban", "**[VAC] Бан**\nИгрок: {player}\nUUID: {uuid}\nУверенность: {confidence}%\nЗабанил: {banned_by}");
         setDefault("messages.ru.webhook_alert", "**[VAC] Алерт**\nИгрок: {player}\nПроверка: {check}\nУверенность: {confidence}%");
     }

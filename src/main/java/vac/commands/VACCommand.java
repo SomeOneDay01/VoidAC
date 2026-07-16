@@ -6,6 +6,7 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 import vac.VAC;
 import vac.gui.SettingsGUI;
 import vac.killaura.KillAuraAnalyzer;
@@ -18,7 +19,7 @@ public class VACCommand implements CommandExecutor, TabCompleter {
 
     private final VAC plugin;
 
-    private static final List<String> MAIN = Arrays.asList("ban","profile","lags","confidence","crash","alerts","spectate","report","check","checkvpn","history","freeze","settings","reload","stats","help");
+    private static final List<String> MAIN = Arrays.asList("ban","profile","lags","confidence","crash","alerts","spectate","report","check","checkvpn","history","freeze","settings","reload","stats","help","update","version","replay");
     private static final List<String> CONF_ACTIONS = Arrays.asList("set","add","remove","reset","info");
     private static final List<String> LAG_VALS = Arrays.asList("5","15","30","60","120");
     private static final List<String> CONF_VALS = Arrays.asList("10","25","50","75","100");
@@ -47,6 +48,9 @@ public class VACCommand implements CommandExecutor, TabCompleter {
             case "settings": return settings(sender,args);
             case "reload": return reload(sender);
             case "stats": return stats(sender);
+            case "update": return update(sender);
+            case "version": return version(sender);
+            case "replay": return replay(sender, args);
             default: sendHelp(sender); return true;
         }
     }
@@ -204,6 +208,41 @@ public class VACCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean update(CommandSender s) {
+        if (!s.hasPermission("vac.command.update")) { s.sendMessage(noPerm()); return true; }
+        s.sendMessage(msg("update_checking"));
+        if (plugin.getUpdateChecker() != null) {
+            plugin.getUpdateChecker().checkAsync();
+            s.sendMessage(msg("update_checked"));
+        } else {
+            s.sendMessage(msg("update_error"));
+        }
+        return true;
+    }
+
+    private boolean version(CommandSender s) {
+        if (!s.hasPermission("vac.command.version")) { s.sendMessage(noPerm()); return true; }
+        String ver = plugin.getDescription().getVersion();
+        s.sendMessage(msg("version_info").replace("{version}", ver));
+        return true;
+    }
+
+    private boolean replay(CommandSender s, String[] a) {
+        if (!(s instanceof Player)) { s.sendMessage(msg("only_players")); return true; }
+        if (!s.hasPermission("vac.command.replay")) { s.sendMessage(noPerm()); return true; }
+        Player p = (Player) s;
+        if (a.length < 2) { s.sendMessage(msg("usage").replace("{usage}", "/vac replay <игрок> [save|stop]")); return true; }
+        Player t = Bukkit.getPlayer(a[1]);
+        if (t == null || !t.isOnline()) { s.sendMessage(msg("player_not_online")); return true; }
+        if (a.length >= 3 && a[2].equalsIgnoreCase("save")) {
+            plugin.getReplayRecorder().saveReplay(t);
+            s.sendMessage(msg("replay_saved").replace("{player}", t.getName()));
+            return true;
+        }
+        plugin.getReplayRecorder().playReplay(p, t);
+        return true;
+    }
+
     private boolean settings(CommandSender s, String[] a) {
         if(!(s instanceof Player)){s.sendMessage(msg("only_players"));return true;}
         if(!s.hasPermission("vac.admin")){s.sendMessage(noPerm());return true;}
@@ -268,6 +307,7 @@ public class VACCommand implements CommandExecutor, TabCompleter {
         s.sendMessage(msg("help_checkvpn")); s.sendMessage(msg("help_history")); s.sendMessage(msg("help_freeze"));
         s.sendMessage(msg("help_cps")); s.sendMessage(msg("help_reach")); s.sendMessage(msg("help_hits"));
         s.sendMessage(msg("help_settings")); s.sendMessage(msg("help_reload"));
+        s.sendMessage(msg("help_update")); s.sendMessage(msg("help_version")); s.sendMessage(msg("help_replay"));
         s.sendMessage(msg("help_footer"));
     }
 
@@ -296,7 +336,7 @@ public class VACCommand implements CommandExecutor, TabCompleter {
         return Collections.emptyList();
     }
 
-    private boolean isOnlineCmd(String sub){return sub.equals("ban")||sub.equals("profile")||sub.equals("lags")||sub.equals("confidence")||sub.equals("crash")||sub.equals("spectate")||sub.equals("report")||sub.equals("check")||sub.equals("checkvpn")||sub.equals("history")||sub.equals("freeze")||sub.equals("cps")||sub.equals("reach")||sub.equals("hits");}
+    private boolean isOnlineCmd(String sub){return sub.equals("ban")||sub.equals("profile")||sub.equals("lags")||sub.equals("confidence")||sub.equals("crash")||sub.equals("spectate")||sub.equals("report")||sub.equals("check")||sub.equals("checkvpn")||sub.equals("history")||sub.equals("freeze")||sub.equals("cps")||sub.equals("reach")||sub.equals("hits")||sub.equals("replay");}
     private List<String> getPlayers(){return Bukkit.getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());}
     private List<String> filter(List<String>l,String p){return l.stream().filter(s->s.toLowerCase().startsWith(p)).collect(Collectors.toList());}
     private String noPerm(){return plugin.getConfigManager().getMessage("no_permission");}

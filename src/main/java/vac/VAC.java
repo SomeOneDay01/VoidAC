@@ -21,6 +21,9 @@ import vac.bungee.BungeeManager;
 import vac.antixray.AntiXrayManager;
 import vac.database.SQLiteManager;
 import vac.updater.UpdateChecker;
+import vac.analysis.PlayerProfiler;
+import vac.analysis.AimAnalyzer;
+import vac.analysis.ReplayRecorder;
 
 public class VAC extends JavaPlugin {
 
@@ -48,6 +51,9 @@ public class VAC extends JavaPlugin {
     private AntiXrayManager antiXrayManager;
     private SQLiteManager sqliteManager;
     private UpdateChecker updateChecker;
+    private PlayerProfiler playerProfiler;
+    private AimAnalyzer aimAnalyzer;
+    private ReplayRecorder replayRecorder;
 
     @Override
     public void onEnable() {
@@ -91,6 +97,9 @@ public class VAC extends JavaPlugin {
             badPacketsManager = new BadPacketsManager(this);
             bungeeManager = new BungeeManager(this);
             antiXrayManager = new AntiXrayManager(this);
+            playerProfiler = new PlayerProfiler(this);
+            aimAnalyzer = new AimAnalyzer();
+            replayRecorder = new ReplayRecorder(this);
             updateChecker = new UpdateChecker(this);
 
             if (configManager.isMySQLEnabled() || configManager.isSQLiteEnabled()) {
@@ -111,6 +120,7 @@ public class VAC extends JavaPlugin {
             getServer().getPluginManager().registerEvents(killAuraAnalyzer, this);
             getServer().getPluginManager().registerEvents(badPacketsManager, this);
             getServer().getPluginManager().registerEvents(antiXrayManager, this);
+            getServer().getPluginManager().registerEvents(playerProfiler, this);
             getServer().getPluginManager().registerEvents(updateChecker, this);
 
             if (configManager.isBungeeEnabled()) {
@@ -146,6 +156,8 @@ public class VAC extends JavaPlugin {
         if (lagManager != null) lagManager.stopAll();
         if (freezeManager != null) freezeManager.unfreezeAll();
         if (crashManager != null) crashManager.shutdown();
+        if (replayRecorder != null) replayRecorder.shutdown();
+        if (playerProfiler != null) playerProfiler.cleanup();
         if (playerDataManager != null) playerDataManager.saveAll();
         if (alertManager != null) alertManager.save();
         if (mysqlManager != null) mysqlManager.disconnect();
@@ -179,5 +191,8 @@ public class VAC extends JavaPlugin {
     public BungeeManager getBungeeManager() { return bungeeManager; }
     public AntiXrayManager getAntiXrayManager() { return antiXrayManager; }
     public SQLiteManager getSQLiteManager() { return sqliteManager; }
+    public PlayerProfiler getPlayerProfiler() { return playerProfiler; }
+    public AimAnalyzer getAimAnalyzer() { return aimAnalyzer; }
+    public ReplayRecorder getReplayRecorder() { return replayRecorder; }
     public UpdateChecker getUpdateChecker() { return updateChecker; }
 }

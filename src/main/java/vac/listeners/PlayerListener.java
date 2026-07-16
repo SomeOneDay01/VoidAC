@@ -50,6 +50,15 @@ public class PlayerListener implements Listener {
         if (plugin.getKillAuraAnalyzer() != null) {
             plugin.getKillAuraAnalyzer().remove(player.getUniqueId());
         }
+        if (plugin.getAimAnalyzer() != null) {
+            plugin.getAimAnalyzer().remove(player.getUniqueId());
+        }
+        if (plugin.getReplayRecorder() != null) {
+            plugin.getReplayRecorder().remove(player.getUniqueId());
+        }
+        if (plugin.getPlayerProfiler() != null) {
+            plugin.getPlayerProfiler().remove(player.getUniqueId());
+        }
 
         plugin.getPlayerDataManager().remove(player.getUniqueId());
     }
