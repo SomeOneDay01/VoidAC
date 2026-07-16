@@ -38,10 +38,6 @@
   - Buttons for ban/freeze confirmation
 - **Discord Webhooks** — ban and alert notifications
 - **Bungee/Velocity** — cross-server ban/alert synchronization
-- **Web Dashboard** — built-in HTTP dashboard on port 8080 with:
-  - Real-time player stats, confidence, violations
-  - Top confidences, player search, TPS monitor
-  - REST API for external tools
 - **Auto-Updater** — checks GitHub releases and notifies admins on join
 - **PlaceholderAPI** (separate expansion) — `%vac_confidence_<player>%`, `%vac_cps_<player>%`, `%vac_reach_<player>%`, and more
 
@@ -123,12 +119,6 @@ discord:
   channel_id: "YOUR_CHANNEL_ID"
 ```
 
-### Web Dashboard
-```yaml
-dashboard:
-  port: 8080
-  password: "changeme"
-```
 
 ### KillAura Detection
 ```yaml
