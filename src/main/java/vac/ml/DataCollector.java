@@ -3,6 +3,7 @@ package vac.ml;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import vac.VAC;
+import vac.killaura.KillAuraAnalyzer;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -15,9 +16,16 @@ public class DataCollector {
     private final FeatureExtractor extractor;
     private final Map<UUID, CollectionSession> activeSessions = new ConcurrentHashMap<>();
     private final List<FeatureVector> pendingSamples = new ArrayList<>();
+    private final Map<UUID, Long> lastAutoCollect = new HashMap<>();
     private BukkitRunnable collectTask;
+    private BukkitRunnable autoCollectTask;
 
     private static final int COLLECT_INTERVAL_TICKS = 20;
+    private static final int AUTO_COLLECT_INTERVAL_TICKS = 40;
+    private static final long AUTO_COOLDOWN_MS = 5000;
+    private static final long CLEAN_PLAYER_MIN_MS = 300_000;
+    private static final int MIN_HITS_FOR_CHEAT = 15;
+    private static final int MIN_HITS_FOR_LEGIT = 20;
 
     public DataCollector(VAC plugin, FeatureExtractor extractor) {
         this.plugin = plugin;
@@ -44,7 +52,61 @@ public class DataCollector {
         };
         collectTask.runTaskTimer(plugin, 60L, COLLECT_INTERVAL_TICKS);
 
+        autoCollectTask = new BukkitRunnable() {
+            @Override
+            public void run() {
+                autoCollect();
+            }
+        };
+        autoCollectTask.runTaskTimer(plugin, 100L, AUTO_COLLECT_INTERVAL_TICKS);
+
         saveTask();
+    }
+
+    private void autoCollect() {
+        long now = System.currentTimeMillis();
+        KillAuraAnalyzer ka = plugin.getKillAuraAnalyzer();
+
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            UUID uuid = player.getUniqueId();
+
+            KillAuraAnalyzer.HitStats stats = ka.getStats(player);
+            if (stats.totalHits < 5) continue;
+
+            String label = null;
+
+            boolean highCps = stats.cps > plugin.getConfigManager().getKaMaxCps();
+            boolean highReach = stats.avgReach > plugin.getConfigManager().getKaMaxReach();
+            boolean lowAim = stats.totalHits >= 10 && stats.avgAimDev < 0.3;
+
+            if (stats.totalHits >= MIN_HITS_FOR_CHEAT && (highCps || highReach || lowAim)) {
+                label = "CHEAT";
+            }
+
+            long onlineSince = now - (player.getTicksLived() * 50L);
+            if (stats.totalHits >= MIN_HITS_FOR_LEGIT && onlineSince > CLEAN_PLAYER_MIN_MS) {
+                if (!highCps && !highReach && stats.avgAimDev > 0.5) {
+                    double pdConfidence = plugin.getPlayerDataManager().getOrCreate(player).getConfidence();
+                    if (pdConfidence < 10) {
+                        label = "LEGIT";
+                    }
+                }
+            }
+
+            if (label != null) {
+                Long lastCollect = lastAutoCollect.get(uuid);
+                if (lastCollect == null || now - lastCollect > AUTO_COOLDOWN_MS) {
+                    lastAutoCollect.put(uuid, now);
+                    FeatureVector fv = extractor.extract(player, label);
+                    synchronized (pendingSamples) {
+                        pendingSamples.add(fv);
+                    }
+                    if (plugin.getConfigManager().isDebug()) {
+                        plugin.getLogger().info("[AutoCollect] " + player.getName() + " → " + label);
+                    }
+                }
+            }
+        }
     }
 
     private void saveTask() {
@@ -58,6 +120,9 @@ public class DataCollector {
                     pendingSamples.clear();
                 }
                 saveBatch(toSave);
+                if (plugin.getConfigManager().isDebug()) {
+                    plugin.getLogger().info("[AutoCollect] Saved " + toSave.size() + " samples");
+                }
             }
         }.runTaskTimerAsynchronously(plugin, 200L, 200L);
     }
@@ -110,8 +175,79 @@ public class DataCollector {
         }
     }
 
+    public void trainFromSaved() {
+        File dir = new File(plugin.getDataFolder(), "datacollect");
+        if (!dir.exists()) return;
+        File[] files = dir.listFiles((d, name) -> name.endsWith(".json"));
+        if (files == null) return;
+        for (File file : files) {
+            try {
+                StringBuilder content = new StringBuilder();
+                try (BufferedReader r = new BufferedReader(
+                        new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = r.readLine()) != null) content.append(line);
+                }
+                String json = content.toString();
+                UUID uuid = extractUuid(json);
+                long t = extractLong(json, "\"t\":");
+                String label = extractLabel(json);
+                if (label == null || label.equals("UNKNOWN")) continue;
+                double[] f = extractFeatures(json);
+                if (f == null) continue;
+                FeatureVector fv = new FeatureVector(uuid, t, f[0], f[1], f[2], f[3], f[4], f[5], f[6], f[7], f[8], label);
+                plugin.getOnlineGaussianClassifier().train(fv);
+            } catch (Exception ignored) {}
+        }
+        int total = plugin.getOnlineGaussianClassifier().getTotalSamples();
+        plugin.getLogger().info("Trained model from " + total + " saved samples");
+    }
+
+    private UUID extractUuid(String json) {
+        int idx = json.indexOf("\"uuid\":\"");
+        if (idx < 0) return UUID.randomUUID();
+        idx += 8;
+        int end = json.indexOf('"', idx);
+        if (end < 0) return UUID.randomUUID();
+        return UUID.fromString(json.substring(idx, end));
+    }
+
+    private long extractLong(String json, String key) {
+        int idx = json.indexOf(key);
+        if (idx < 0) return 0;
+        idx += key.length();
+        int end = json.indexOf(',', idx);
+        if (end < 0) end = json.indexOf('}', idx);
+        if (end < 0) return 0;
+        return Long.parseLong(json.substring(idx, end).trim());
+    }
+
+    private String extractLabel(String json) {
+        int idx = json.indexOf("\"l\":\"");
+        if (idx < 0) return null;
+        idx += 5;
+        int end = json.indexOf('"', idx);
+        if (end < 0) return null;
+        return json.substring(idx, end);
+    }
+
+    private double[] extractFeatures(String json) {
+        int idx = json.indexOf("\"f\":[");
+        if (idx < 0) return null;
+        idx += 5;
+        int end = json.indexOf(']', idx);
+        if (end < 0) return null;
+        String[] parts = json.substring(idx, end).split(",");
+        double[] f = new double[9];
+        for (int i = 0; i < Math.min(parts.length, 9); i++) {
+            f[i] = Double.parseDouble(parts[i].trim());
+        }
+        return f;
+    }
+
     public void shutdown() {
         if (collectTask != null) collectTask.cancel();
+        if (autoCollectTask != null) autoCollectTask.cancel();
         synchronized (pendingSamples) {
             if (!pendingSamples.isEmpty()) {
                 saveBatch(new ArrayList<>(pendingSamples));
@@ -119,6 +255,7 @@ public class DataCollector {
             }
         }
         activeSessions.clear();
+        lastAutoCollect.clear();
     }
 
     private static class CollectionSession {

@@ -159,6 +159,7 @@ public class VAC extends JavaPlugin {
             }
 
             dataCollector.start();
+            dataCollector.trainFromSaved();
             cheatHologramManager.start();
 
             if (configManager.isDiscordBotEnabled()) {
