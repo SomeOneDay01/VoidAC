@@ -1,7 +1,5 @@
 package vac.antixray;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -11,29 +9,51 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import vac.VAC;
-import vac.util.PacketUtils;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 public class AntiXrayManager implements Listener {
 
     private final VAC plugin;
 
     private static final Set<Material> ORES = new HashSet<>(Arrays.asList(
-            Material.DIAMOND_ORE, Material.EMERALD_ORE,
-            Material.GOLD_ORE, Material.IRON_ORE,
-            Material.COAL_ORE, Material.LAPIS_ORE,
-            Material.REDSTONE_ORE, Material.NETHER_GOLD_ORE,
-            Material.NETHER_QUARTZ_ORE, Material.ANCIENT_DEBRIS
+        Material.DIAMOND_ORE, Material.EMERALD_ORE,
+        Material.GOLD_ORE, Material.IRON_ORE,
+        Material.COAL_ORE, Material.LAPIS_ORE,
+        Material.REDSTONE_ORE, Material.NETHER_GOLD_ORE,
+        Material.NETHER_QUARTZ_ORE, Material.ANCIENT_DEBRIS
     ));
+
+    static {
+        tryAdd(Material.class, "DEEPSLATE_DIAMOND_ORE");
+        tryAdd(Material.class, "DEEPSLATE_EMERALD_ORE");
+        tryAdd(Material.class, "DEEPSLATE_GOLD_ORE");
+        tryAdd(Material.class, "DEEPSLATE_IRON_ORE");
+        tryAdd(Material.class, "DEEPSLATE_COAL_ORE");
+        tryAdd(Material.class, "DEEPSLATE_LAPIS_ORE");
+        tryAdd(Material.class, "DEEPSLATE_REDSTONE_ORE");
+        tryAdd(Material.class, "COPPER_ORE");
+        tryAdd(Material.class, "DEEPSLATE_COPPER_ORE");
+    }
+
+    private static void tryAdd(Class<?> clazz, String field) {
+        try { ORES.add((Material) clazz.getField(field).get(null)); } catch (Exception ignored) {}
+    }
 
     private static final Set<Material> TRANSPARENT = new HashSet<>(Arrays.asList(
             Material.AIR, Material.CAVE_AIR, Material.VOID_AIR,
-            Material.WATER, Material.LAVA, Material.GRASS,
-            Material.TALL_GRASS, Material.VINE
+            Material.WATER, Material.LAVA, Material.VINE
     ));
+    static {
+        tryAddTrans("GRASS");
+        tryAddTrans("TALL_GRASS");
+        tryAddTrans("SHORT_GRASS");
+    }
+
+    private static void tryAddTrans(String name) {
+        try { TRANSPARENT.add((Material) Material.class.getField(name).get(null)); } catch (Exception ignored) {}
+    }
 
     private static final BlockFace[] FACES = {
             BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH,
@@ -70,7 +90,7 @@ public class AntiXrayManager implements Listener {
 
     private Set<Location> findHiddenOres(Chunk chunk) {
         Set<Location> result = new HashSet<>();
-        int minY = 0;
+        int minY = chunk.getWorld().getMinHeight();
         int maxY = chunk.getWorld().getMaxHeight() - 1;
 
         for (int x = 0; x < 16; x++) {
@@ -113,10 +133,17 @@ public class AntiXrayManager implements Listener {
 
     private void sendOreHides(Player player, Set<Location> ores) {
         for (Location loc : ores) {
-            Object packet = PacketUtils.createPacketPlayOutBlockChange(
-                    loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(),
-                    1, 0);
-            PacketUtils.sendPacket(player, packet);
+            sendBlockChange(player, loc, Material.STONE);
+        }
+    }
+
+    private void sendBlockChange(Player player, Location loc, Material mat) {
+        try {
+            player.getClass().getMethod("sendBlockChange", Location.class, Material.class).invoke(player, loc, mat);
+        } catch (Exception e) {
+            try {
+                player.getClass().getMethod("sendBlockChange", Location.class, Material.class, byte.class).invoke(player, loc, mat, (byte) 0);
+            } catch (Exception ignored) {}
         }
     }
 

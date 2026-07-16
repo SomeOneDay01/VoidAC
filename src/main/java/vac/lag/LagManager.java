@@ -66,6 +66,16 @@ public class LagManager {
         return activeLags.values();
     }
 
+    private void sendBlockChange(Player player, Location loc, Material mat) {
+        try {
+            player.getClass().getMethod("sendBlockChange", Location.class, Material.class).invoke(player, loc, mat);
+        } catch (Exception e) {
+            try {
+                player.getClass().getMethod("sendBlockChange", Location.class, Material.class, byte.class).invoke(player, loc, mat, (byte) 0);
+            } catch (Exception ignored) {}
+        }
+    }
+
     public List<String> getAvailableCategories() {
         List<String> cats = new ArrayList<>(plugin.getConfigManager().getLagDescriptions().keySet());
         if (cats.isEmpty()) {
@@ -196,7 +206,7 @@ public class LagManager {
                                         Material.NETHER_PORTAL, Material.END_PORTAL, Material.LAVA};
                     Material mat = mats[random.nextInt(mats.length)];
 
-                    player.sendBlockChange(new Location(loc.getWorld(), bx, by, bz), mat, (byte) 0);
+                    sendBlockChange(player, new Location(loc.getWorld(), bx, by, bz), mat);
                 }
             }
 
@@ -205,15 +215,15 @@ public class LagManager {
                 int by = Math.min(255, Math.max(0, loc.getBlockY() + random.nextInt(3) - 1));
                 int bz = loc.getBlockZ() + random.nextInt(6) - 3;
 
-                player.sendBlockChange(new Location(loc.getWorld(), bx, by, bz),
-                        Material.AIR, (byte) 0);
+                sendBlockChange(player, new Location(loc.getWorld(), bx, by, bz),
+                        Material.AIR);
 
                 for (int i = 0; i < 3; i++) {
                     int rx = loc.getBlockX() + random.nextInt(10) - 5;
                     int rz = loc.getBlockZ() + random.nextInt(10) - 5;
                     int ry = loc.getWorld().getHighestBlockYAt(rx, rz);
-                    player.sendBlockChange(new Location(loc.getWorld(), rx, ry, rz),
-                            Material.BARRIER, (byte) 0);
+                    sendBlockChange(player, new Location(loc.getWorld(), rx, ry, rz),
+                            Material.BARRIER);
                 }
             }
         }

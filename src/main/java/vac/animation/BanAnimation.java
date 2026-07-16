@@ -7,12 +7,31 @@ import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 import vac.VAC;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 public class BanAnimation {
 
     private final VAC plugin;
     private final Random random;
+    private static final Map<String, Particle> PARTICLE_CACHE = new HashMap<>();
+
+    private static Particle particle(String... names) {
+        for (String cached : PARTICLE_CACHE.keySet()) {
+            if (java.util.Arrays.asList(names).contains(cached)) {
+                return PARTICLE_CACHE.get(cached);
+            }
+        }
+        for (String name : names) {
+            try {
+                Particle p = Particle.valueOf(name);
+                PARTICLE_CACHE.put(name, p);
+                return p;
+            } catch (IllegalArgumentException ignored) {}
+        }
+        return null;
+    }
 
     public BanAnimation(VAC plugin) {
         this.plugin = plugin;
@@ -69,7 +88,7 @@ public class BanAnimation {
 
                     Location particleLoc = new Location(world, x, height, z);
                     spawnRedstone(world, particleLoc, 0.6f);
-                    spawnParticle(world, particleLoc, Particle.CRIT_MAGIC, 1, 0, 0, 0, 0);
+                    spawnParticle(world, particleLoc, particle("ENCHANTED_HIT", "CRIT_MAGIC"), 1, 0, 0, 0, 0);
                 }
 
                 // Маленькие частицы вдоль спирали (след)
@@ -99,7 +118,7 @@ public class BanAnimation {
                     double riseX = startLoc.getX() + (random.nextDouble() - 0.5) * 3;
                     double riseZ = startLoc.getZ() + (random.nextDouble() - 0.5) * 3;
                     Location riseLoc = new Location(world, riseX, startLoc.getY(), riseZ);
-                    spawnParticle(world, riseLoc, Particle.LAVA, 1, 0.2, 0, 0.2, 0);
+                    spawnParticle(world, riseLoc, particle("LANDING_LAVA", "DRIPPING_LAVA", "LAVA"), 1, 0.2, 0, 0.2, 0);
                 }
 
                 // Звук подъёма
@@ -137,7 +156,7 @@ public class BanAnimation {
         playSound(location, "ENTITY_WITHER_DEATH", 1.5f, 0.4f);
 
         // Основной взрыв — красный шар
-        spawnParticle(world, location, Particle.EXPLOSION_HUGE, 2, 0, 0, 0, 0);
+        spawnParticle(world, location, particle("EXPLOSION", "EXPLOSION_HUGE"), 2, 0, 0, 0, 0);
 
         // Красные частицы разлетаются во все стороны
         for (int i = 0; i < 60; i++) {
@@ -154,7 +173,7 @@ public class BanAnimation {
             double yOff = random.nextDouble() * 4;
             double zOff = (random.nextDouble() - 0.5) * 5;
             Location critLoc = location.clone().add(xOff, yOff, zOff);
-            spawnParticle(world, critLoc, Particle.CRIT_MAGIC, 2, 0, 0, 0, 0);
+            spawnParticle(world, critLoc, particle("ENCHANTED_HIT", "CRIT_MAGIC"), 2, 0, 0, 0, 0);
         }
 
         // Красные кольца expanding
@@ -167,7 +186,7 @@ public class BanAnimation {
                 double ry = location.getY() + ring * 0.4;
                 Location ringLoc = new Location(world, rx, ry, rz);
                 spawnRedstone(world, ringLoc, 0.7f);
-                spawnParticle(world, ringLoc, Particle.CRIT_MAGIC, 1, 0, 0, 0, 0);
+                spawnParticle(world, ringLoc, particle("ENCHANTED_HIT", "CRIT_MAGIC"), 1, 0, 0, 0, 0);
             }
         }
 
@@ -176,7 +195,7 @@ public class BanAnimation {
             double xOff = (random.nextDouble() - 0.5) * 4;
             double zOff = (random.nextDouble() - 0.5) * 4;
             Location lavaLoc = location.clone().add(xOff, 0.5, zOff);
-            spawnParticle(world, lavaLoc, Particle.LAVA, 1, 0, 0, 0, 0);
+            spawnParticle(world, lavaLoc, particle("LANDING_LAVA", "DRIPPING_LAVA", "LAVA"), 1, 0, 0, 0, 0);
         }
 
         // Сердцевина взрыва — яркий красный свет
@@ -186,7 +205,7 @@ public class BanAnimation {
             double zOff = (random.nextDouble() - 0.5) * 2;
             Location coreLoc = location.clone().add(xOff, yOff, zOff);
             spawnRedstone(world, coreLoc, 1.5f);
-            spawnParticle(world, coreLoc, Particle.FLAME, 3, 0, 0, 0, 0.05);
+            spawnParticle(world, coreLoc, particle("FLAME"), 3, 0, 0, 0, 0.05);
         }
 
         world.playSound(location, Sound.BLOCK_ANVIL_PLACE, 1.0f, 0.3f);
@@ -197,7 +216,7 @@ public class BanAnimation {
             Particle.DustOptions dust = new Particle.DustOptions(
                     Color.RED, size
             );
-            world.spawnParticle(Particle.REDSTONE, loc, 1, 0, 0, 0, dust);
+            world.spawnParticle(particle("DUST", "REDSTONE"), loc, 1, 0, 0, 0, dust);
         } catch (Exception ignored) {}
     }
 

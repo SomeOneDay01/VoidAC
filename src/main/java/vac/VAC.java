@@ -16,7 +16,6 @@ import vac.crash.CrashManager;
 import vac.webhook.WebhookManager;
 import vac.killaura.KillAuraAnalyzer;
 import vac.discord.DiscordBot;
-import vac.dashboard.WebDashboard;
 import vac.packets.BadPacketsManager;
 import vac.bungee.BungeeManager;
 import vac.antixray.AntiXrayManager;
@@ -44,7 +43,6 @@ public class VAC extends JavaPlugin {
     private CrashManager crashManager;
     private KillAuraAnalyzer killAuraAnalyzer;
     private DiscordBot discordBot;
-    private WebDashboard webDashboard;
     private BadPacketsManager badPacketsManager;
     private BungeeManager bungeeManager;
     private AntiXrayManager antiXrayManager;
@@ -55,6 +53,7 @@ public class VAC extends JavaPlugin {
     public void onEnable() {
         try {
             instance = this;
+            vac.util.VersionUtil.init();
             saveDefaultConfig();
             reloadConfig();
 
@@ -62,6 +61,7 @@ public class VAC extends JavaPlugin {
             configManager.loadConfig();
 
             mysqlManager = new MySQLManager(this);
+            sqliteManager = new SQLiteManager(this);
             if (configManager.isMySQLEnabled()) {
                 if (!mysqlManager.connect()) {
                     getLogger().severe("Ошибка подключения к MySQL!");
@@ -88,14 +88,12 @@ public class VAC extends JavaPlugin {
             crashManager = new CrashManager(this);
             killAuraAnalyzer = new KillAuraAnalyzer(this);
             discordBot = new DiscordBot(this);
-            webDashboard = new WebDashboard(this);
             badPacketsManager = new BadPacketsManager(this);
             bungeeManager = new BungeeManager(this);
             antiXrayManager = new AntiXrayManager(this);
-            sqliteManager = new SQLiteManager(this);
             updateChecker = new UpdateChecker(this);
 
-            if (configManager.isMySQLEnabled()) {
+            if (configManager.isMySQLEnabled() || configManager.isSQLiteEnabled()) {
                 evidenceManager.createTable();
             }
 
@@ -127,10 +125,6 @@ public class VAC extends JavaPlugin {
                 discordBot.start();
             }
 
-            if (configManager.getDashboardPort() > 0) {
-                webDashboard.start();
-            }
-
             int interval = (int) (configManager.getCheckIntervalSeconds() * 20);
             if (interval < 1) interval = 20;
             Bukkit.getScheduler().runTaskTimerAsynchronously(this,
@@ -148,7 +142,6 @@ public class VAC extends JavaPlugin {
     @Override
     public void onDisable() {
         if (discordBot != null) discordBot.stop();
-        if (webDashboard != null) webDashboard.stop();
         if (bungeeManager != null) bungeeManager.disable();
         if (lagManager != null) lagManager.stopAll();
         if (freezeManager != null) freezeManager.unfreezeAll();
@@ -182,7 +175,6 @@ public class VAC extends JavaPlugin {
     public CrashManager getCrashManager() { return crashManager; }
     public KillAuraAnalyzer getKillAuraAnalyzer() { return killAuraAnalyzer; }
     public DiscordBot getDiscordBot() { return discordBot; }
-    public WebDashboard getWebDashboard() { return webDashboard; }
     public BadPacketsManager getBadPacketsManager() { return badPacketsManager; }
     public BungeeManager getBungeeManager() { return bungeeManager; }
     public AntiXrayManager getAntiXrayManager() { return antiXrayManager; }

@@ -261,11 +261,6 @@ discord:
   guild_id: ""
   allowed_role: ""
 
-# Web Dashboard
-dashboard:
-  port: 8080
-  password: "changeme"
-
 # KillAura Detection
 killaura:
   # Порог общей оценки (0-100) для повышения уверенности

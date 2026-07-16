@@ -5,8 +5,8 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import vac.VAC;
+import vac.util.PacketUtils;
 
-import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.util.*;
 
@@ -56,7 +56,16 @@ public class CheckManager {
                         sendPosition(target, loc.getX(), loc.getY() + 5, loc.getZ(), loc.getYaw(), loc.getPitch());
                         break;
                     case 1:
-                        sendPacket(target, createBlockBreakPacket(loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ()));
+                        try {
+                            Object bp = vac.util.PacketUtils.createBlockPos(loc.getBlockX(), loc.getBlockY() - 1, loc.getBlockZ());
+                            if (bp != null) {
+                                Class<?> clazz = vac.util.VersionUtil.getNmsClass("PacketPlayOutBlockBreakAnimation");
+                                if (clazz != null) {
+                                    java.lang.reflect.Constructor<?> ctor = clazz.getConstructor(int.class, bp.getClass(), int.class);
+                                    sendPacket(target, ctor.newInstance(0, bp, 5));
+                                }
+                            }
+                        } catch (Exception e) {}
                         break;
                     case 2:
                         sendPosition(target, loc.getX() + 0.5, loc.getY(), loc.getZ() + 0.5, loc.getYaw(), loc.getPitch());
@@ -76,34 +85,11 @@ public class CheckManager {
     }
 
     private void sendPosition(Player player, double x, double y, double z, float yaw, float pitch) {
-        try {
-            Class<?> clazz = Class.forName("net.minecraft.server.v1_16_R3.PacketPlayOutPosition");
-            Class<?> flagsClass = Class.forName("net.minecraft.server.v1_16_R3.PacketPlayOutPosition$EnumPlayerTeleportFlags");
-            Constructor<?> ctor = clazz.getConstructor(double.class, double.class, double.class, float.class, float.class, Collection.class, int.class);
-            @SuppressWarnings("unchecked")
-            EnumSet<?> flags = EnumSet.noneOf((Class<? extends Enum>) flagsClass);
-            Object packet = ctor.newInstance(x, y, z, yaw, pitch, flags, 0);
-            sendPacket(player, packet);
-        } catch (Exception ignored) {}
-    }
-
-    private Object createBlockBreakPacket(int x, int y, int z) {
-        try {
-            Class<?> clazz = Class.forName("net.minecraft.server.v1_16_R3.PacketPlayOutBlockBreakAnimation");
-            Class<?> bpClass = Class.forName("net.minecraft.server.v1_16_R3.BlockPosition");
-            Constructor<?> bpCtor = bpClass.getConstructor(int.class, int.class, int.class);
-            Constructor<?> ctor = clazz.getConstructor(int.class, bpClass, int.class);
-            return ctor.newInstance(0, bpCtor.newInstance(x, y, z), 5);
-        } catch (Exception e) { return null; }
+        PacketUtils.sendPacket(player, PacketUtils.createPacketPlayOutPosition(x, y, z, yaw, pitch));
     }
 
     private void sendPacket(Player player, Object packet) {
-        if (packet == null) return;
-        try {
-            Object entityPlayer = player.getClass().getMethod("getHandle").invoke(player);
-            Object connection = entityPlayer.getClass().getField("playerConnection").get(entityPlayer);
-            connection.getClass().getMethod("sendPacket", Class.forName("net.minecraft.server.v1_16_R3.Packet")).invoke(connection, packet);
-        } catch (Exception ignored) {}
+        PacketUtils.sendPacket(player, packet);
     }
 
     public void checkVPN(Player target, Player executor) {

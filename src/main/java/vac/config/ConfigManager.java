@@ -142,10 +142,6 @@ public class ConfigManager {
     public String getDiscordChannelId() { return config.getString("discord.channel_id", ""); }
     public String getDiscordAllowedRole() { return config.getString("discord.allowed_role", ""); }
 
-    // Web Dashboard
-    public int getDashboardPort() { return config.getInt("dashboard.port", 0); }
-    public String getDashboardPassword() { return config.getString("dashboard.password", ""); }
-
     // SQLite
     public boolean isSQLiteEnabled() { return config.getBoolean("sqlite.enabled", true); }
 

