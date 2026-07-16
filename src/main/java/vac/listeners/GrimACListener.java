@@ -147,25 +147,13 @@ public class GrimACListener implements Listener {
                 return;
             }
 
-            try {
-                Class<?> alertListenerClass = Class.forName("ac.grim.grimac.api.events.AlertListener");
-                Method registerMethod = alertManager.getClass().getMethod("registerListener", Object.class);
-                registerMethod.invoke(alertManager, createAlertListener(alertListenerClass));
-                plugin.getLogger().info("VAC зарегистрировал AlertListener в GrimAC!");
-            } catch (ClassNotFoundException e) {
-                plugin.getLogger().info("AlertListener API не найден (старая версия GrimAC), будет использован Event-based метод.");
-
-                try {
-                    Method registerMethod = alertManager.getClass().getMethod("addListener", Object.class);
-                    registerMethod.invoke(alertManager, createLegacyListener());
-                    plugin.getLogger().info("VAC зарегистрировал legacy Listener в GrimAC!");
-                } catch (Exception e2) {
-                    plugin.getLogger().warning("Не удалось зарегистрировать слушатель GrimAC: " + e2.getMessage());
-                }
+            if (registerGrimListener(alertManager)) {
+                this.grimacEnabled = true;
+                plugin.getLogger().info("VAC успешно подключился к GrimAC!");
+            } else {
+                this.grimacEnabled = false;
+                plugin.getLogger().warning("VAC не смог зарегистрироваться в GrimAC.");
             }
-
-            this.grimacEnabled = true;
-            plugin.getLogger().info("VAC успешно подключился к GrimAC!");
 
         } catch (Exception e) {
             plugin.getLogger().warning("Ошибка при подключении к GrimAC: " + e.getMessage());
@@ -174,6 +162,66 @@ public class GrimACListener implements Listener {
             }
             this.grimacEnabled = false;
         }
+    }
+
+    private boolean registerGrimListener(Object alertManager) {
+        // Try AlertListener API (newer GrimAC)
+        try {
+            Class<?> alertListenerClass = Class.forName("ac.grim.grimac.api.events.AlertListener");
+            Method registerMethod = alertManager.getClass().getMethod("registerListener", alertListenerClass);
+            registerMethod.invoke(alertManager, createAlertListener(alertListenerClass));
+            plugin.getLogger().info("VAC зарегистрировал AlertListener в GrimAC!");
+            return true;
+        } catch (Exception ignored) {}
+
+        // Try AlertListener from different package
+        try {
+            Class<?> alertListenerClass = Class.forName("ac.grim.grimac.events.AlertListener");
+            Method registerMethod = alertManager.getClass().getMethod("addListener", alertListenerClass);
+            registerMethod.invoke(alertManager, createAlertListener(alertListenerClass));
+            plugin.getLogger().info("VAC зарегистрировал AlertListener (events) в GrimAC!");
+            return true;
+        } catch (Exception ignored) {}
+
+        // Search for any register method dynamically
+        for (Method m : alertManager.getClass().getMethods()) {
+            String name = m.getName();
+            if (!name.equalsIgnoreCase("addListener") && !name.equalsIgnoreCase("registerListener")
+                    && !name.equalsIgnoreCase("subscribe") && !name.equalsIgnoreCase("addEventHandler")) {
+                continue;
+            }
+            Class<?>[] params = m.getParameterTypes();
+            if (params.length != 1) continue;
+            try {
+                Object listener = java.lang.reflect.Proxy.newProxyInstance(
+                    params[0].getClassLoader(),
+                    new Class[]{params[0]},
+                    (proxy, method, args) -> {
+                        if ("onAlert".equals(method.getName()) && args != null && args.length > 0) {
+                            processAlert(args[0]);
+                        }
+                        if ("toString".equals(method.getName())) return "VAC-GrimListener";
+                        if ("hashCode".equals(method.getName())) return System.identityHashCode(proxy);
+                        if ("equals".equals(method.getName())) return proxy == args[0];
+                        return null;
+                    }
+                );
+                m.invoke(alertManager, listener);
+                plugin.getLogger().info("VAC зарегистрировал GrimAC слушатель через " + m.getName() + "(" + params[0].getSimpleName() + ")");
+                return true;
+            } catch (Exception ignored) {}
+        }
+
+        // Last resort: try addListener(Object) as fallback (may fail on some versions)
+        try {
+            Method m = alertManager.getClass().getMethod("addListener", Object.class);
+            m.invoke(alertManager, createLegacyListener());
+            plugin.getLogger().info("VAC зарегистрировал legacy Object listener в GrimAC!");
+            return true;
+        } catch (Exception ignored) {}
+
+        plugin.getLogger().warning("Не удалось зарегистрировать слушатель GrimAC");
+        return false;
     }
 
     private Object createAlertListener(Class<?> alertListenerClass) {

@@ -83,7 +83,13 @@ public class PlayerData {
         }
         newTimestamps[count++] = now;
 
-        if (count > 50) {
+        int spikeWindow = plugin.getConfigManager().getSpikeWindowSeconds() * 1000;
+        int spikeCount = 0;
+        for (long t : timestamps) {
+            if (now - t <= spikeWindow) spikeCount++;
+        }
+
+        if (spikeCount > 10) {
             checkTimestamps.put(checkName, Arrays.copyOf(newTimestamps, count));
             return true;
         }
@@ -94,17 +100,35 @@ public class PlayerData {
 
     private double getViolationMultiplier(String checkName) {
         int count = violations.getOrDefault(checkName, 0);
-        if (count > 10) return 2.0;
-        if (count > 5) return 1.5;
-        return 1.0;
+        double base = count > 10 ? 2.0 : count > 5 ? 1.5 : 1.0;
+
+        long now = System.currentTimeMillis();
+        long[] timestamps = checkTimestamps.get(checkName);
+        int spikeCount = 0;
+        int spikeWindow = plugin.getConfigManager().getSpikeWindowSeconds() * 1000;
+        if (timestamps != null) {
+            for (long t : timestamps) {
+                if (now - t <= spikeWindow) spikeCount++;
+            }
+        }
+        if (spikeCount > 5) {
+            base *= plugin.getConfigManager().getSpikeMultiplier();
+        }
+
+        return base;
     }
 
     public void addConfidence(double amount) {
         double max = plugin.getConfigManager().getMaxConfidence();
         this.confidence = Math.min(max, this.confidence + amount);
+        updateLastViolationTime();
         if (plugin.getConfigManager().isDebug()) {
             plugin.getLogger().info("Confidence +" + String.format("%.1f", amount) + "% for " + playerName + " (total: " + String.format("%.1f", confidence) + "%)");
         }
+    }
+
+    public void updateLastViolationTime() {
+        this.lastViolationTime = System.currentTimeMillis();
     }
 
     public void removeConfidence(double amount) {
@@ -116,17 +140,19 @@ public class PlayerData {
     }
 
     public void tickConfidenceDecay() {
+        if (confidence <= 0) return;
+        double minConfidence = plugin.getConfigManager().getConfidenceDecayMin();
+        if (confidence <= minConfidence) return;
+
         long now = System.currentTimeMillis();
         long decayDelay = plugin.getConfigManager().getDecayDelaySeconds() * 1000L;
 
-        if (now - lastViolationTime > decayDelay && confidence > 0) {
-            double decay = plugin.getConfigManager().getConfidenceDecay();
+        if (now - lastViolationTime > decayDelay) {
+            double decayPerSecond = plugin.getConfigManager().getConfidenceDecay();
             double interval = plugin.getConfigManager().getCheckIntervalSeconds();
-
-            double decayAmount = decay * interval * (now - lastViolationTime - decayDelay) / 1000.0;
-            if (decayAmount > 0) {
-                removeConfidence(decayAmount);
-            }
+            double decayAmount = decayPerSecond * interval;
+            double newConfidence = Math.max(minConfidence, confidence - decayAmount);
+            this.confidence = newConfidence;
         }
     }
 
